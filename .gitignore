@@ -1,0 +1,11 @@
+/.next/
+/node_modules/
+/nodeModules/
+/.node/
+.DS_Store
+.env
+node_modules/
+.next/
+out/
+build/
+.env*.local

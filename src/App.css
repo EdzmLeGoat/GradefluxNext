@@ -1,0 +1,1273 @@
+#root {
+  margin: 0 auto;
+  text-align: center;
+  min-height: 100vh; /* allow document to grow while keeping full viewport minimum */
+}
+
+.title {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== BASE STYLES ===== */
+body {
+  background-color: var(--color-background);
+  color: var(--gray-12);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+  /* prevent the page from scrolling - scrolling happens inside .main-content */
+  overflow: hidden;
+}
+
+.theme-toggle {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  margin: 0;
+  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+}
+
+.theme-toggle:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+}
+
+.theme-toggle:active {
+  background: var(--color-surface-active);
+}
+
+.theme-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+header {
+  position: fixed; /* pin header to the top of the viewport */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px; /* adjust if your header is taller/shorter */
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--gray-2);
+  padding: 1rem 2rem;
+  box-shadow: var(--box-shadow-default);
+
+  h1 {
+    /* Use CSS variable that changes with theme */
+    background: var(--title-gradient);
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    font-size: 2rem;
+    font-weight: bold;
+    animation: gradient-slide 3s linear infinite;
+    padding: 0 1rem;
+  }
+  img {
+    height: 56px;
+  }
+  .header-right-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+/* Centering container for login and main content */
+.main-center {
+  display: flex;
+  align-items: center; /* vertical center */
+  justify-content: center; /* horizontal center */
+  min-height: calc(100vh - 80px); /* account for fixed header height */
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* push the grid under the fixed header and make it a fixed-height frame */
+.main-container {
+  box-sizing: border-box;
+  margin-top: 80px; /* same as header height */
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  padding: 2rem 2rem;
+  gap: 2rem;
+  padding-left: 0px;
+  background-color: var(--gray-1);
+  overflow: hidden; /* don't let main-container itself scroll */
+  height: calc(100vh - 80px); /* fill remaining viewport below header */
+}
+
+/* Ensure header is fixed and body layout matches earlier Vite app behavior */
+header.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px; /* ensure header height matches the layout spacing */
+  z-index: 1000;
+}
+
+/* Ensure page content starts below header */
+body,
+#__next {
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* make only the main-content scrollable */
+.main-content {
+  width: 100%;
+  justify-self: center;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* stylize scroll bar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--gray-2);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--gray-4);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-5);
+  }
+}
+
+.sidebar-container {
+  background-color: var(--gray-2);
+  padding: 0.5rem;
+  border-radius: 8px;
+  height: fit-content; /* let it size to content so sticky works */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+
+  top: calc(80px + 2rem); /* include header height */
+  left: 10px;
+  position: sticky; /* make the sidebar sticky so it stays in view when scrolling */
+  position: -webkit-sticky;
+
+  transition: width 0.2s ease;
+}
+
+.sidebar-element {
+  padding: 0;
+  background-color: transparent;
+  border-radius: 8px;
+  height: 50px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transform: scale(1);
+  /*make mouse pointer*/
+  cursor: pointer;
+  &:hover {
+    background-color: var(--gray-4);
+    & img {
+      transform: scale(1.1);
+    }
+  }
+  &:active {
+    background-color: var(--gray-5);
+  }
+
+  & img {
+    filter: var(--theme-icon-filter);
+    width: 30px;
+    height: 30px;
+    margin-left: 0.5rem;
+  }
+  &.active {
+    background-color: var(--accent-5);
+    &:hover {
+      background-color: var(--accent-6);
+    }
+    &:active {
+      background-color: var(--accent-7);
+    }
+  }
+}
+.sidebar-label {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--color-text);
+  margin: 0 0.5rem;
+}
+
+.card-container {
+  list-style: none;
+  height: fit-content;
+  display: grid;
+  /* ill use media queries to make the grid template 2 columns when */
+  /* the screen is big enough and then one column otherwise*/
+  grid-template-columns: 1fr;
+  justify-content: center;
+  align-items: center;
+  gap: 4rem;
+  row-gap: 3rem;
+  width: 90%;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes angle-spin {
+  from {
+    --angle: 0deg;
+  }
+  to {
+    --angle: 360deg;
+  }
+}
+
+.glow {
+  position: relative; /* ensure pseudo-elements are positioned relative to this element */
+  z-index: 0; /* baseline stacking context for children */
+}
+
+.glow::after,
+.glow::before {
+  content: "";
+  position: absolute;
+  /* make pseudo-elements cover the element (and extend a bit) */
+  inset: -2px; /* expands 2px beyond the element so glow wraps it */
+  z-index: -1; /* put the glow behind the element's content */
+  border-radius: inherit;
+  opacity: 0.6;
+  background-image: conic-gradient(
+    from var(--angle),
+    rgb(189, 187, 187),
+    white,
+    rgb(189, 187, 187)
+  );
+  animation: angle-spin 3s infinite linear;
+  pointer-events: none;
+  transition:
+    opacity 0.5s ease,
+    background-image 0.5s ease;
+}
+
+.glow.green::after,
+.glow.green::before {
+  background-image: conic-gradient(
+    from var(--angle),
+    rgb(140, 207, 15),
+    rgb(74, 133, 7),
+    rgb(140, 207, 15)
+  );
+}
+
+.glow.blue::after,
+.glow.blue::before {
+  background-image: conic-gradient(
+    from var(--angle),
+    rgb(24, 208, 233),
+    rgb(30, 144, 255),
+    rgb(24, 208, 233)
+  );
+}
+
+.glow.yellow::after,
+.glow.yellow::before {
+  background-image: var(--yellow-glow);
+}
+
+.glow.orange::after,
+.glow.orange::before {
+  background-image: conic-gradient(
+    from var(--angle),
+    rgb(255, 186, 125),
+    orange,
+    rgb(255, 186, 125)
+  );
+}
+
+.glow.red::after,
+.glow.red::before {
+  background-image: conic-gradient(
+    from var(--angle),
+    rgb(255, 100, 100),
+    red,
+    rgb(255, 100, 100)
+  );
+}
+
+.glow::before {
+  filter: blur(0.5em);
+}
+
+.sem-grade-container {
+  display: flex;
+  justify-content: center;
+}
+.class-card {
+  display: block;
+  height: fit-content;
+  border-radius: 8px;
+  /* keep outer transparent so glow shows through */
+  background: transparent;
+  transition: 0.75s all;
+  transition-timing-function: cubic-bezier(1, -0.002, 0.329, 1.012);
+  &:hover {
+    .sem-grade-container {
+      height: 30px;
+      .sem-desc {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+.class-card__inner {
+  position: relative;
+  z-index: 1; /* above the glow */
+  background-color: var(--gray-2);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  transition: 0.5s all ease;
+}
+
+.class-card__grade-details {
+  display: flex;
+  flex-direction: column;
+  transition: 0.5s all ease;
+  width: 95%;
+}
+
+.class-card__inner-grid-container {
+  display: grid;
+  grid-template-rows: 1fr min(12vw, 80px);
+  grid-template-columns: 1fr;
+  justify-content: center;
+}
+
+.class-card__view-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.class-card__view-button {
+  background-color: var(--color-primary);
+  color: white;
+  width: fit-content;
+  height: fit-content;
+  border: none;
+  border-radius: 8px;
+  padding: min(1vw, 0.5rem) min(2vw, 1rem);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background-color: var(--color-primary-hover);
+  }
+  &:active {
+    background-color: var(--color-primary-active);
+  }
+  box-shadow: var(--box-shadow-default);
+}
+
+.class-card__inner .class-title {
+  font-size: min(3.5vw, 24px);
+  font-weight: bold;
+}
+
+.class-card__inner .grade-container {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.sem-grade-container {
+  height: 0;
+  overflow-y: hidden;
+  transition: 1s all ease;
+  width: 100%;
+  background-color: transparent;
+}
+
+.teacher-name {
+  font-size: min(3vw, 16px);
+  color: var(--color-text-subtle);
+}
+
+.grade-desc {
+  font-size: min(8vw, 3rem);
+  font-weight: bold;
+  &.blue {
+    color: var(--grade-blue);
+  }
+  &.green {
+    color: var(--grade-green);
+  }
+  &.yellow {
+    color: var(--grade-yellow);
+  }
+  &.orange {
+    color: var(--grade-orange);
+  }
+  &.red {
+    color: var(--grade-red);
+  }
+  &.white {
+    color: var(--grade-white);
+  }
+}
+
+.sem-desc {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  font-size: min(5vw, 1.5rem);
+  font-weight: bold;
+  &.blue {
+    color: var(--grade-blue);
+  }
+  &.green {
+    color: var(--grade-green);
+  }
+  &.yellow {
+    color: var(--grade-yellow);
+  }
+  &.orange {
+    color: var(--grade-orange);
+  }
+  &.red {
+    color: var(--grade-red);
+  }
+  &.white {
+    color: var(--grade-white);
+  }
+}
+
+@media only screen and (min-width: 1120px) {
+  .card-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+  .class-details-header {
+    flex-direction: row;
+    gap: 4rem;
+  }
+}
+
+/* for small screens remove text from sidebar*/
+@media only screen and (max-width: 808px) {
+  .sidebar-label {
+    display: none;
+  }
+  .main-container {
+    grid-template-columns: 70px 1fr;
+  }
+  .sidebar-element {
+    width: 50px;
+    justify-content: center;
+    img {
+      margin-left: 0;
+    }
+  }
+  .assignment-item {
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    width: fit-content;
+  }
+  .card-container {
+    gap: 3rem;
+  }
+}
+
+/* Responsive: switch sidebar to horizontal bar under header on very small screens */
+@media (max-width: 504px) {
+  /*make header h1 and logo a bit smaller to conserve space*/
+  header {
+    padding: 1rem;
+  }
+  header h1 {
+    font-size: 1.5rem;
+    padding: 0 0.5rem;
+  }
+  header img {
+    max-width: 100px;
+  }
+  .main-container {
+    grid-template-columns: 1fr; /* single column layout */
+    grid-template-rows: auto 1fr; /* allow rows to size to content */
+    padding: 1rem; /* reduce padding for small screens */
+    padding-top: 0px;
+    gap: 1rem;
+  }
+
+  /* place the sidebar as a centered horizontal bar under the header */
+  .sidebar-container {
+    position: static; /* flow normally in the document under the header */
+    top: auto;
+    left: auto;
+    width: fit-content;
+    display: flex;
+    flex-direction: row; /* lay out icons horizontally */
+    justify-content: center; /* center the bar */
+    gap: 0.5rem;
+    padding: 0.25rem;
+    border-radius: 8px;
+    align-items: center;
+    overflow-x: auto; /* allow horizontal scroll if many items */
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--color-border);
+    background: transparent; /* keep background subtle */
+    margin: 0 auto;
+    border-top: 0px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+  }
+
+  /* hide textual labels in the sidebar */
+  .sidebar-label {
+    display: none;
+  }
+
+  /* compact each sidebar element for touch targets; keep icon centered */
+  .sidebar-element {
+    width: auto;
+    min-width: 48px;
+    height: 48px;
+    padding: 0.25rem 0.5rem;
+    justify-content: center;
+  }
+
+  .sidebar-element img {
+    margin-left: 0;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.class-details__main-content {
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+  gap: 2rem;
+}
+
+.class-details-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  .class-details-title {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+}
+
+.class-details-side-container {
+  display: flex;
+  flex-direction: column;
+  h1 {
+    text-align: left;
+  }
+  p {
+    text-align: left;
+  }
+  width: 100%;
+}
+
+.class-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  align-items: center;
+}
+
+.class-details-grade-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: left;
+  justify-content: center;
+  width: 100%;
+}
+
+.class-details-grade {
+  font-size: 3rem;
+  font-weight: bold;
+  &.blue {
+    color: var(--grade-blue);
+  }
+  &.green {
+    color: var(--grade-green);
+  }
+  &.yellow {
+    color: var(--grade-yellow);
+  }
+  &.orange {
+    color: var(--grade-orange);
+  }
+  &.red {
+    color: var(--grade-red);
+  }
+  &.white {
+    color: var(--grade-white);
+  }
+}
+
+.class-grade-bar {
+  width: 100%;
+  height: 25px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  overflow: visible; /* allow inner bar content to extend outside horizontally */
+  background: transparent; /* keep background transparent so glow can show through if applied */
+}
+
+.class-grade-bar__inner {
+  position: relative;
+  z-index: 1; /* place above glow pseudo-elements */
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  overflow: visible; /* allow text to overflow horizontally if needed */
+  transition: background-color 0.5s ease;
+  &.blue {
+    background-color: var(--grade-blue-dark);
+    .class-grade-bar__inner-bar {
+      background-color: var(--grade-blue-bar);
+    }
+  }
+  &.green {
+    background-color: var(--grade-green-dark);
+    .class-grade-bar__inner-bar {
+      background-color: var(--grade-green-bar);
+    }
+  }
+  &.yellow {
+    background-color: var(--grade-yellow-dark);
+    .class-grade-bar__inner-bar {
+      background-color: var(--grade-yellow-bar);
+    }
+  }
+  &.orange {
+    background-color: var(--grade-orange-dark);
+    .class-grade-bar__inner-bar {
+      background-color: var(--grade-orange-bar);
+    }
+  }
+  &.red {
+    background-color: var(--grade-red-dark);
+    .class-grade-bar__inner-bar {
+      background-color: var(--grade-red-bar);
+    }
+  }
+  &.white {
+    background-color: var(--grade-white-dark);
+    .class-grade-bar__inner-bar {
+      background-color: var(--grade-white);
+    }
+  }
+}
+
+.class-grade-bar__inner-bar {
+  transition: background-color 0.5s ease;
+  z-index: 1; /* place above glow pseudo-elements */
+  height: 100%;
+  border-radius: inherit;
+  display: inline-flex; /* allow intrinsic width while keeping vertical centering */
+  align-items: center;
+  justify-content: left;
+  color: white;
+  font-weight: bold;
+  transition: width 0.5s ease-in-out;
+  white-space: nowrap; /* prevent vertical wrapping */
+  overflow: visible; /* ensure overflow is visible horizontally */
+}
+
+.class-grade-bar__text {
+  padding: 0 0.5rem;
+}
+
+.assignments-container {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto; /* prefer auto so scrollbar only appears when needed */
+  max-height: 500px;
+  -webkit-overflow-scrolling: touch;
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-4) var(--gray-2);
+
+  /* WebKit scrollbar styling (Chrome, Edge, Safari) */
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: var(--gray-2);
+    border-radius: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--gray-4);
+    border-radius: 8px;
+    border: 2px solid transparent; /* creates padding effect */
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-5);
+  }
+}
+
+.assignment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* push grade container to the right */
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--gray-3);
+  border-radius: 8px;
+  span {
+    font-size: min(4vw, 16px);
+    font-weight: 500;
+    background-color: var(--gray-5);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    &:hover {
+      background-color: var(--gray-4);
+    }
+    &:active {
+      background-color: var(--gray-5);
+    }
+  }
+  width: 100%;
+  &:hover {
+    border-color: var(--color-primary);
+  }
+  border: 1px solid var(--color-border);
+  transition: background-color 0.2s ease;
+  overflow: visible; /* keep this so tooltip could be supported later */
+}
+
+.assignment-left {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0; /* allow name to truncate if needed */
+}
+
+.assignment-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 60px; /* allow name to shrink and trigger truncation if needed */
+  max-width: 160px; /* prevent name from growing too large and ensure it truncates if needed */
+  position: relative;
+  overflow: hidden; /* restore clipping for ellipsis */
+}
+
+/* Remove custom tooltip styles to avoid clipping issues; rely on title attribute */
+.assignment-name[data-tooltip],
+.assignment-name[data-tooltip]::after,
+.assignment-name[data-tooltip]::before,
+.assignment-name[data-tooltip]:hover::after {
+  all: unset;
+}
+
+.assignment-date {
+  font-size: 14px;
+  color: var(--color-text-subtle);
+  /* prevent date from shrinking too small and ensure it truncates if needed */
+  min-width: 30px;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto; /* push the date to the end of the .assignment-left flex container */
+}
+
+.assignment-grade-container {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 160px;
+  &.blue {
+    color: var(--grade-blue);
+  }
+  &.green {
+    color: var(--grade-green);
+  }
+  &.yellow {
+    color: var(--grade-yellow);
+  }
+  &.orange {
+    color: var(--grade-orange);
+  }
+  &.red {
+    color: var(--grade-red);
+  }
+  &.white {
+    color: var(--grade-white);
+  }
+}
+.assignment-actions-container {
+  display: flex;
+  gap: 0.25rem;
+  flex-direction: row;
+}
+.assignment-grade-sep {
+  opacity: 0.7;
+  margin: 0 0.25rem;
+}
+
+.class-details__button-container {
+  display: flex;
+  width: 100%;
+  height: fit-content;
+  justify-content: space-between;
+}
+
+.class-details__prev-next-container {
+  display: flex;
+  width: fit-content;
+  gap: 2rem;
+}
+.class-details__header-button {
+  border: none;
+  color: var(--color-primary);
+  font-size: min(4vw, 16px);
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  background-color: var(--gray-3);
+  padding: 0.5rem 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background-color: var(--gray-4);
+  }
+  &:active {
+    background-color: var(--gray-5);
+  }
+  border: 1px solid var(--color-border);
+  width: fit-content;
+  height: fit-content;
+}
+
+.class-details__back-icon {
+  width: 30px;
+  height: 30px;
+  filter: var(--theme-icon-filter);
+}
+.small-icon {
+  cursor: pointer;
+  padding: 0.25rem;
+  padding-bottom: 0;
+  aspect-ratio: 1 / 1;
+  filter: var(--theme-icon-filter);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+  &:active {
+    transform: scale(0.9);
+  }
+}
+
+.canvas-assignments-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+}
+.upcoming-title {
+  font-size: 2rem;
+  font-weight: bold;
+}
+.canvas-assignment-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 80%;
+  max-width: 600px;
+  align-items: center;
+  h2 {
+    font-size: min(1.5rem, 6vw);
+    font-weight: bold;
+  }
+  ul {
+    gap: 1rem;
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+  }
+  background-color: var(--gray-2);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  &:hover {
+    border-color: var(--color-primary-subtle);
+  }
+}
+
+.login-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  width: 80%;
+  max-width: 420px;
+  background-color: var(--gray-2);
+  height: fit-content;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-default);
+  border: 1px solid var(--color-border);
+  /* center absolutely on page*/
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  h1 {
+    font-size: min(8vw, 2rem);
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: min(100%, 300px);
+    input {
+      padding: 0.5rem;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      transition: border-color 0.2s ease;
+      &:hover {
+        border-color: var(--color-primary);
+      }
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px var(--color-primary);
+      }
+    }
+
+    label {
+      text-align: left;
+      font-size: 14px;
+      color: var(--color-text-subtle);
+    }
+    button {
+      color: var(--color-text);
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      padding: 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      &:hover {
+        border-color: var(--color-primary);
+      }
+    }
+  }
+}
+
+.form-field {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 0.875rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.form-field input::placeholder {
+  color: transparent; /* use empty placeholder to enable :placeholder-shown */
+}
+
+.form-field label {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all 0.15s ease;
+  pointer-events: none;
+  color: var(--color-text-subtle);
+  background: transparent;
+  padding: 0 0.25rem;
+}
+
+.form-field input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.form-field input:focus + label,
+.form-field input:not(:placeholder-shown) + label {
+  top: -0.6rem;
+  transform: translateY(0);
+  font-size: 0.75rem;
+  background: var(--gray-2);
+  color: var(--color-primary);
+}
+
+button.login-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--gray-3);
+  &:active {
+    background-color: var(--color-primary);
+  }
+}
+
+/*given styles for the checkbox*/
+
+.CheckboxRoot {
+  background-color: var(--gray-1);
+  /*make width and height responsive*/
+  width: min(4vw, 25px);
+  height: min(4vw, 25px);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--box-shadow-default);
+}
+.CheckboxRoot:hover {
+  background-color: var(--accent-3);
+}
+
+.CheckboxIndicator {
+  color: var(--color-text);
+  height: 15px;
+  width: 15px;
+}
+
+.AvatarRoot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  overflow: hidden;
+  user-select: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 100%;
+  background-color: var(--gray-3);
+}
+
+.AvatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.AvatarFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  color: var(--color-primary);
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.SelectTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0 15px;
+  font-size: 13px;
+  line-height: 1;
+  height: 35px;
+  gap: 5px;
+  border: 1px solid var(--color-border);
+  background-color: var(--gray-3);
+  span {
+    font-size: min(3vw, 13px);
+  }
+}
+
+.SelectContent {
+  overflow: hidden;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow:
+    0px 10px 38px -10px rgba(22, 23, 24, 0.35),
+    0px 10px 20px -15px rgba(22, 23, 24, 0.2);
+}
+
+.SelectViewport {
+  padding: 5px;
+}
+
+.SelectItem {
+  font-size: 13px;
+  line-height: 1;
+  color: black;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  height: 25px;
+  padding: 0 35px 0 25px;
+  position: relative;
+  user-select: none;
+}
+
+.SelectItem[data-disabled] {
+  color: var(--color-text);
+  pointer-events: none;
+}
+.SelectItem[data-highlighted] {
+  outline: none;
+  background-color: var(--accent-7);
+  color: var(--color-text);
+}
+
+.SelectLabel {
+  padding: 0 25px;
+  font-size: 12px;
+  line-height: 25px;
+  color: black;
+}
+
+.SelectItemIndicator {
+  position: absolute;
+  left: 0;
+  width: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.SelectScrollButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 25px;
+  background-color: white;
+  color: var(--accent-7);
+  cursor: default;
+}
+
+/* Autofill override: use theme-safe color and prevent the browser yellow/blue highlight */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--gray-4) inset !important;
+  box-shadow: 0 0 0 1000px var(--gray-4) inset !important;
+  transition: background-color 5000s ease-in-out 0s !important; /* prevents autofill flash */
+}
+
+/* Firefox autofill */
+input:-moz-autofill,
+textarea:-moz-autofill,
+select:-moz-autofill {
+  box-shadow: 0 0 0 1000px var(--gray-4) inset !important;
+  -moz-text-fill-color: var(--color-text) !important;
+}
+
+/* Spinner for loading state */
+.login-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--color-primary, #2563eb);
+  margin-right: 8px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ensure the document root fills the viewport and the page itself does not scroll. */
+html,
+body,
+#__next {
+  height: 100%;
+  overflow: hidden; /* prevent whole-page scrolling; only inner containers should scroll */
+}
