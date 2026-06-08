@@ -1,8 +1,13 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import type { ClassCardProps, ClassDetailsProps } from "@/types/Grades";
-import { getGradeColor } from "@/types/Grades";
+import type {
+  ClassProps,
+  GradeNumber,
+  GradeLetter,
+} from "../../../src/types/Grades";
+import { getGradeColor } from "../../../src/types/Grades";
+import useSessionStore from "../../../src/stores/useSessionStore";
 
 const nextIcon = "/assets/classes/next.svg";
 
@@ -14,44 +19,43 @@ export default function ClassCard({
   gradeNumber,
   semLetter,
   semNumber,
-  classDetailsProps,
   classIndex,
-}: ClassCardProps & {
-  classDetailsProps?: ClassDetailsProps | null;
-  classIndex?: number;
-}) {
+}: ClassProps & { classIndex: number }) {
   const router = useRouter();
+  const setSelectedClass = useSessionStore((s) => s.setSelectedClass);
 
   const handleView = () => {
-    // Persist the details for the ClassDetails page under an index-specific key
-    const details: ClassDetailsProps = classDetailsProps || {
-      classTitle,
-      teacherName,
-      periodNumber,
-      assignmentList: [],
-    };
-    try {
-      const key = `selectedClassDetails_${typeof classIndex !== "undefined" ? classIndex : periodNumber}`;
-      localStorage.setItem(key, JSON.stringify(details));
-    } catch (e) {
-      // ignore
+    // set selected class in store so ClassDetails can read it
+    const idx = typeof classIndex !== "undefined" ? classIndex : undefined;
+    if (typeof idx === "number") {
+      try {
+        setSelectedClass(idx);
+      } catch (e) {
+        /* ignore */
+      }
     }
-    // navigate to an index-specific URL
-    const idx = typeof classIndex !== "undefined" ? classIndex : periodNumber;
-    router.push(`/class-details/${encodeURIComponent(String(idx))}`);
+
+    // navigate to a single class-details route (store-driven)
+    // ensure middleware sees an auth cookie so server won't redirect to /login
+    try {
+      document.cookie = "gradefluxAuth=1; path=/";
+    } catch (e) {
+      /* ignore */
+    }
+    router.push(`/class-details`);
   };
 
   const title = `${classTitle} - ${periodNumber}`;
   const gradeDesc =
     gradeNumber === "N/A"
       ? "N/A"
-      : `${gradeLetter} (${gradeNumber.toFixed(2)}%)`;
+      : `${gradeLetter} (${(gradeNumber as number).toFixed(2)}%)`;
   const semDesc =
     semNumber === "N/A"
       ? "N/A"
-      : `Semester ${semLetter} (${semNumber.toFixed(2)}%)`;
-  const quarterColor = getGradeColor(gradeNumber);
-  const semColor = getGradeColor(semNumber);
+      : `Semester ${semLetter} (${(semNumber as number).toFixed(2)}%)`;
+  const quarterColor = getGradeColor(gradeNumber as GradeNumber);
+  const semColor = getGradeColor(semNumber as GradeNumber);
   return (
     <li className={`class-card glow ${quarterColor}`}>
       <div className="class-card__inner">

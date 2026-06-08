@@ -27,21 +27,15 @@ export function getGradeLetter(grade: GradeNumber): GradeLetter {
   return "N/A"; // For N/A or invalid grades
 }
 
-export type ClassCardProps = {
-  classTitle: string;
-  teacherName: string;
-  periodNumber: Period;
-  gradeLetter: GradeLetter;
-  gradeNumber: GradeNumber;
-  semLetter: GradeLetter;
-  semNumber: GradeNumber;
-};
-
-export type ClassDetailsProps = {
+export type ClassProps = {
   classTitle: string;
   teacherName: string;
   periodNumber: Period;
   assignmentList: ClassAssignment[];
+  gradeLetter: GradeLetter;
+  gradeNumber: GradeNumber;
+  semLetter: GradeLetter;
+  semNumber: GradeNumber;
 };
 
 export type ClassAssignment = {
@@ -70,6 +64,8 @@ export function calculateOverallGrade(assignments: ClassAssignment[]): GradeNumb
     if (assignment.pointsEarned !== "N/A") {
       atTotalPointsEarned += assignment.pointsEarned;
       atTotalPointsPossible += assignment.totalPoints;
+      console.log(`Adding All Task assignment "${assignment.assignmentTitle}": ${assignment.pointsEarned}/${assignment.totalPoints}`);
+      console.log('running total points possible:', atTotalPointsPossible, 'total points earned:', atTotalPointsEarned);
     }
   });
 
@@ -87,6 +83,8 @@ export function calculateOverallGrade(assignments: ClassAssignment[]): GradeNumb
 
   const practicePrepGrade = (ppTotalPointsPossible === 0) ? 100 : (ppTotalPointsEarned / ppTotalPointsPossible) * 100;
 
+  console.log(`All Tasks: ${atTotalPointsEarned}/${atTotalPointsPossible} (${allTaskGrade}%)`);
+  console.log(`Practice Prep: ${ppTotalPointsEarned}/${ppTotalPointsPossible} (${practicePrepGrade}%)`);
   if (atTotalPointsPossible === 0 && ppTotalPointsPossible === 0) {
     return "N/A";
   } else {
@@ -108,9 +106,4 @@ export type CanvasAssignmentGroup = {
   classPeriod: Period,
   classLink: string,
   assignments: ClassAssignment[]
-}
-
-export type ClassInfo = {
-  classCardProps: ClassCardProps,
-  classDetailsProps: ClassDetailsProps
 }

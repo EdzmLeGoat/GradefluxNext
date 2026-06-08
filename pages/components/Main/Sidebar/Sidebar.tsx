@@ -17,7 +17,7 @@ export default function Sidebar() {
         label="Settings"
       />
       <SidebarElement
-        pageLink="/class-details/1"
+        pageLink="/class-details"
         icon={BoltIcon}
         label="Details"
       />

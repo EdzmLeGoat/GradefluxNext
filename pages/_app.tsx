@@ -10,6 +10,7 @@ import Header from "./components/Main/Header/Header";
 import Sidebar from "./components/Main/Sidebar/Sidebar";
 import ClassListPage from "./components/ClassList/ClassListPage";
 import useSessionStore from "../src/stores/useSessionStore";
+import type { ClassProps } from "../src/types/Grades";
 
 export default function MyApp({
   Component,
@@ -23,7 +24,8 @@ export default function MyApp({
     username?: string;
     password?: string;
   } | null>(null);
-  const [classCardProps, setClassCardProps] = useState<any[] | null>(null);
+  // now we store the app's classes as ClassProps objects
+  const [classProps, setClassProps] = useState<ClassProps[] | null>(null);
 
   // Zustand store setters
   const setClassesStore = useSessionStore((s) => s.setClasses);
@@ -37,8 +39,7 @@ export default function MyApp({
         : null;
     const pathname = router.pathname;
 
-    // If there's no session, allow viewing a locally-selected class details page
-    // if selectedClassDetails exists in localStorage; otherwise redirect to /login
+    // If there's no session, require the dedicated login route
     if (!session) {
       // clear any existing classes in the global store
       try {
@@ -47,14 +48,8 @@ export default function MyApp({
         /* ignore */
       }
 
-      const hasSelectedDetails =
-        typeof window !== "undefined" &&
-        !!localStorage.getItem("selectedClassDetails");
       if (pathname === "/login") {
         setShowLogin(true);
-      } else if (hasSelectedDetails && pathname.startsWith("/class-details")) {
-        // allow access to class-details page based on local storage selection (covers /class-details and /class-details/[period])
-        setShowLogin(false);
       } else {
         // redirect user to dedicated login route
         router.replace("/login");
@@ -123,24 +118,38 @@ export default function MyApp({
 
       if (raw) {
         const normalized = normalizeArrayToClassInfo(raw);
-        setClassCardProps(normalized);
-        const classesForStore = normalized.map(
-          (c) => c.classDetailsProps || c.classCardProps || c,
+        // normalized is an array of wrappers; extract ClassProps entries for UI and store
+        const uiNormalized = normalized.map(
+          (n) =>
+            (n.classDetailsProps
+              ? n.classDetailsProps
+              : n.classCardProps
+                ? n.classCardProps
+                : n) as ClassProps,
         );
+        setClassProps(uiNormalized);
+        // Convert normalized entries into ClassProps objects for the store
+        const classesForStore = uiNormalized;
         try {
-          setClassesStore(classesForStore);
+          setClassesStore(classesForStore as ClassProps[]);
         } catch (e) {
           /* ignore */
         }
       } else if (initialClassInfo && Array.isArray(initialClassInfo)) {
         const raw2 = initialClassInfo as any[];
         const normalized = normalizeArrayToClassInfo(raw2);
-        setClassCardProps(normalized);
-        const classesForStore = normalized.map(
-          (c) => c.classDetailsProps || c.classCardProps || c,
+        const uiNormalized = normalized.map(
+          (n) =>
+            (n.classDetailsProps
+              ? n.classDetailsProps
+              : n.classCardProps
+                ? n.classCardProps
+                : n) as ClassProps,
         );
+        setClassProps(uiNormalized);
+        const classesForStore = uiNormalized;
         try {
-          setClassesStore(classesForStore);
+          setClassesStore(classesForStore as ClassProps[]);
         } catch (e) {
           /* ignore */
         }
@@ -192,7 +201,7 @@ export default function MyApp({
               data.sessionData.classes &&
               Array.isArray(data.sessionData.classes)
             ) {
-              setClassesStore(data.sessionData.classes);
+              setClassesStore(data.sessionData.classes as ClassProps[]);
             }
           } catch (e) {
             /* ignore */
@@ -204,7 +213,7 @@ export default function MyApp({
             JSON.stringify({ classes: data }),
           );
           try {
-            if (Array.isArray(data)) setClassesStore(data);
+            if (Array.isArray(data)) setClassesStore(data as ClassProps[]);
           } catch (e) {
             /* ignore */
           }
@@ -243,8 +252,8 @@ export default function MyApp({
             {router.pathname.startsWith("/class-details") ? (
               // dynamic class-details route should render the page component
               <Component {...pageProps} />
-            ) : classCardProps && classCardProps.length ? (
-              <ClassListPage classCardProps={classCardProps} />
+            ) : classProps && classProps.length ? (
+              <ClassListPage classProps={classProps} />
             ) : (
               <Component {...pageProps} />
             )}

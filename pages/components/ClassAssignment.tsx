@@ -66,7 +66,6 @@ export default function ClassAssignment({
         {
           assignmentTitle: assignment.assignmentTitle,
           dateGraded: assignment.dateGraded || null,
-          totalPoints: assignment.totalPoints,
         },
         {
           pointsEarned: pointsValue === null ? null : pointsValue,
@@ -92,12 +91,10 @@ export default function ClassAssignment({
 
   const handleDelete = () => {
     if (typeof window === "undefined") return;
-    if (!confirm("Delete this assignment? This cannot be undone.")) return;
     try {
       deleteAssignmentFromAll({
         assignmentTitle: assignment.assignmentTitle,
         dateGraded: assignment.dateGraded || null,
-        totalPoints: assignment.totalPoints,
       });
     } catch (e) {
       console.error("Failed to delete assignment via store:", e);

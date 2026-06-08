@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useRouter } from "next/router";
 import ClassDetailsHeader from "./ClassDetailsHeader";
 import ClassDetailsAssignments from "./ClassDetailsAssignments";
 import { calculateOverallGrade } from "@/types/Grades";
-import type { ClassDetailsProps, ClassAssignment } from "@/types/Grades";
+import type { ClassProps, ClassAssignment } from "@/types/Grades";
+import useSessionStore from "../../../src/stores/useSessionStore";
 
 function sumAssignments(assignments: ClassAssignment[]) {
   let ppActual = 0;
@@ -31,21 +32,21 @@ export default function ClassDetails() {
       : typeof classIndex === "number"
         ? classIndex
         : null;
-  const [details, setDetails] = useState<ClassDetailsProps | null>(null);
 
-  useEffect(() => {
-    try {
-      const indexKey = index !== null ? `selectedClassDetails_${index}` : null;
-      let raw = null;
-      if (indexKey) raw = localStorage.getItem(indexKey);
-      if (!raw) raw = localStorage.getItem("selectedClassDetails");
-      if (!raw) return;
-      const parsed: ClassDetailsProps = JSON.parse(raw);
-      setDetails(parsed);
-    } catch (e) {
-      // ignore
+  // Read classes and selected index from the Zustand store
+  const classes = useSessionStore((s) => s.classes);
+  const selectedIndex = useSessionStore((s) => s.selectedClassIndex);
+
+  // Prefer explicit selectedClassIndex from the store if available, otherwise use the route index
+  const effectiveIndex = selectedIndex ?? index;
+
+  const details: ClassProps | null = React.useMemo(() => {
+    if (effectiveIndex === null) return null;
+    if (Array.isArray(classes) && classes.length >= effectiveIndex) {
+      return classes[effectiveIndex - 1] as ClassProps;
     }
-  }, [index]);
+    return null;
+  }, [effectiveIndex, classes]);
 
   if (!details) {
     return (
@@ -60,10 +61,13 @@ export default function ClassDetails() {
   const { ppActual, ppTotal, atActual, atTotal } = sumAssignments(
     details.assignmentList || [],
   );
-  const gradeNumber = calculateOverallGrade(
-    details.assignmentList || [],
-  ) as number;
-  const semGradeNumber = gradeNumber; // use same for now
+  const gradeNumber = calculateOverallGrade(details.assignmentList || []);
+  const semGradeNumber =
+    typeof gradeNumber === "number"
+      ? gradeNumber
+      : gradeNumber === "N/A"
+        ? 0
+        : Number(gradeNumber);
 
   return (
     <div className="class-details-container">

@@ -1,19 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
-  ClassDetailsProps,
+  ClassProps,
   ClassAssignment,
 } from "@/types/Grades";
+import { calculateOverallGrade, getGradeLetter } from "@/types/Grades";
 
 type AssignmentIdentifier = {
   assignmentTitle: string;
   dateGraded?: string | null;
-  totalPoints: number;
 };
 
 type SessionState = {
-  classes: ClassDetailsProps[];
-  setClasses: (c: ClassDetailsProps[]) => void;
+  classes: ClassProps[];
+  selectedClassIndex: number | null;
+  setClasses: (c: ClassProps[]) => void;
+  setSelectedClass: (index: number | null) => void;
+  // helper to recompute class grade fields from assignmentList
+  recomputeClassGrades: (cls: ClassProps) => ClassProps;
   deleteAssignmentFromAll: (id: AssignmentIdentifier) => void;
   deleteAssignmentFromClass: (classIndex: number, id: AssignmentIdentifier) => void;
   updateAssignmentFromAll?: (id: AssignmentIdentifier, updates: Partial<{ pointsEarned: string | number | null; totalPoints: number }>) => void;
@@ -24,89 +28,79 @@ export const useSessionStore = create<SessionState>()(
   persist(
     (set, get) => ({
       classes: [],
-      setClasses: (c: ClassDetailsProps[]) => set({ classes: c }),
+      selectedClassIndex: null,
+
+      setClasses: (c: ClassProps[]) => set({ classes: c }),
+
+      setSelectedClass: (index: number | null) => {
+        set({ selectedClassIndex: index });
+      },
+
+      // Helper: recompute grade & letter fields for a class object
+      // Accepts a ClassProps (may have updated assignmentList) and returns an updated ClassProps
+      // with gradeNumber, gradeLetter, semNumber, semLetter recalculated.
+      recomputeClassGrades: (cls: ClassProps) => {
+        const assignmentList = Array.isArray(cls.assignmentList) ? cls.assignmentList : [];
+        const newGrade = calculateOverallGrade(assignmentList);
+        const newLetter = getGradeLetter(newGrade);
+        return {
+          ...cls,
+          assignmentList,
+          gradeNumber: newGrade,
+          gradeLetter: newLetter,
+          semNumber: newGrade,
+          semLetter: newLetter,
+        } as ClassProps;
+      },
 
       deleteAssignmentFromAll: (id: AssignmentIdentifier) => {
-        const classes: ClassDetailsProps[] = get().classes || [];
+        const classes: ClassProps[] = get().classes || [];
         let changed = false;
         const match = (a: ClassAssignment | any) =>
           a.assignmentTitle === id.assignmentTitle &&
-          ((a.dateGraded || null) === (id.dateGraded || null)) &&
-          a.totalPoints === id.totalPoints;
+          ((a.dateGraded || null) === (id.dateGraded || null));
 
-        const updated: ClassDetailsProps[] = classes.map((c) => {
+        const updated: ClassProps[] = classes.map((c) => {
           if (!c || !Array.isArray(c.assignmentList)) return c;
           const before = c.assignmentList.length;
           const filtered = c.assignmentList.filter((a: any) => !match(a));
           if (filtered.length !== before) changed = true;
-          return { ...c, assignmentList: filtered } as ClassDetailsProps;
+          // recompute grades for this class after removal
+          return (get().recomputeClassGrades ? get().recomputeClassGrades({ ...c, assignmentList: filtered } as ClassProps) : { ...c, assignmentList: filtered } as ClassProps);
         });
 
         if (changed) {
           set({ classes: updated });
-
-          // Also update any selectedClassDetails keys in localStorage so ClassDetails page picks up change
-          try {
-            Object.keys(localStorage)
-              .filter((k) => k === "selectedClassDetails" || k.startsWith("selectedClassDetails_"))
-              .forEach((k) => {
-                try {
-                  const raw = localStorage.getItem(k);
-                  if (!raw) return;
-                  const parsed = JSON.parse(raw) as any;
-                  if (!parsed || !Array.isArray(parsed.assignmentList)) return;
-                  parsed.assignmentList = parsed.assignmentList.filter((a: any) => !match(a));
-                  localStorage.setItem(k, JSON.stringify(parsed));
-                } catch (e) {
-                  // ignore per-key parse errors
-                }
-              });
-          } catch (e) {
-            // ignore
-          }
         }
       },
 
       deleteAssignmentFromClass: (classIndex: number, id: AssignmentIdentifier) => {
-        const classes: ClassDetailsProps[] = get().classes || [];
-        const idx = classIndex - 1; // classIndex is 1-based across app
+        console.log("Deleting assignment from class", classIndex, id);
+        const classes: ClassProps[] = get().classes || [];
+        const idx = classIndex - 1; // 1-based index
         if (idx < 0 || idx >= classes.length) return;
         const match = (a: ClassAssignment | any) =>
           a.assignmentTitle === id.assignmentTitle &&
-          ((a.dateGraded || null) === (id.dateGraded || null)) &&
-          a.totalPoints === id.totalPoints;
+          ((a.dateGraded || null) === (id.dateGraded || null));
+
         const before = classes[idx].assignmentList?.length || 0;
         const filtered = (classes[idx].assignmentList || []).filter((a: any) => !match(a));
         if (filtered.length === before) return; // nothing removed
         const copy = classes.slice();
-        copy[idx] = { ...copy[idx], assignmentList: filtered } as ClassDetailsProps;
+        // recompute grades for this class after removing the assignment (use helper)
+        const recomputed = get().recomputeClassGrades({ ...copy[idx], assignmentList: filtered } as ClassProps);
+        copy[idx] = recomputed;
         set({ classes: copy });
-
-        // Update the specific selectedClassDetails_{index} key as well
-        try {
-          const key = `selectedClassDetails_${classIndex}`;
-          const raw = localStorage.getItem(key) || localStorage.getItem("selectedClassDetails");
-          if (raw) {
-            const parsed = JSON.parse(raw) as any;
-            if (parsed && Array.isArray(parsed.assignmentList)) {
-              parsed.assignmentList = parsed.assignmentList.filter((a: any) => !match(a));
-              localStorage.setItem(key, JSON.stringify(parsed));
-            }
-          }
-        } catch (e) {
-          // ignore
-        }
       },
 
       updateAssignmentFromAll: (id: AssignmentIdentifier, updates: Partial<{ pointsEarned: string | number | null; totalPoints: number }>) => {
-        const classes: ClassDetailsProps[] = get().classes || [];
+        const classes: ClassProps[] = get().classes || [];
         let changed = false;
         const match = (a: ClassAssignment | any) =>
           a.assignmentTitle === id.assignmentTitle &&
-          ((a.dateGraded || null) === (id.dateGraded || null)) &&
-          a.totalPoints === id.totalPoints;
+          ((a.dateGraded || null) === (id.dateGraded || null));
 
-        const updated: ClassDetailsProps[] = classes.map((c) => {
+        const updated: ClassProps[] = classes.map((c) => {
           if (!c || !Array.isArray(c.assignmentList)) return c;
           const newList = c.assignmentList.map((a: any) => {
             if (match(a)) {
@@ -119,55 +113,22 @@ export const useSessionStore = create<SessionState>()(
             }
             return a;
           });
-          return { ...c, assignmentList: newList } as ClassDetailsProps;
+          // recompute grades for this class after the edit
+          return (get().recomputeClassGrades ? get().recomputeClassGrades({ ...c, assignmentList: newList } as ClassProps) : { ...c, assignmentList: newList } as ClassProps);
         });
 
         if (changed) {
           set({ classes: updated });
-
-          // Persist changes to any selectedClassDetails keys
-          try {
-            Object.keys(localStorage)
-              .filter((k) => k === "selectedClassDetails" || k.startsWith("selectedClassDetails_"))
-              .forEach((k) => {
-                try {
-                  const raw = localStorage.getItem(k);
-                  if (!raw) return;
-                  const parsed = JSON.parse(raw) as any;
-                  if (!parsed || !Array.isArray(parsed.assignmentList)) return;
-                  parsed.assignmentList = parsed.assignmentList.map((a: any) => {
-                    if (match(a)) {
-                      return {
-                        ...a,
-                        pointsEarned: typeof updates.pointsEarned !== 'undefined' && updates.pointsEarned !== null ? String(updates.pointsEarned) : a.pointsEarned,
-                        totalPoints: typeof updates.totalPoints === 'number' ? updates.totalPoints : a.totalPoints,
-                      };
-                    }
-                    return a;
-                  });
-                  localStorage.setItem(k, JSON.stringify(parsed));
-                } catch (e) {
-                  // ignore per-key parse errors
-                }
-              });
-          } catch (e) {
-            // ignore
-          }
         }
       },
 
       clearSession: () => {
-        set({ classes: [] });
-        try {
-          localStorage.removeItem("gradefluxSession");
-        } catch (e) {
-          /* ignore */
-        }
+        set({ classes: [], selectedClassIndex: null });
       },
     }),
     {
       name: "gradefluxSession", // persist under same key for compatibility
-      partialize: (state) => ({ classes: state.classes ?? [] }),
+      partialize: (state) => ({ classes: state.classes ?? [], selectedClassIndex: state.selectedClassIndex ?? null }),
     },
   ),
 );

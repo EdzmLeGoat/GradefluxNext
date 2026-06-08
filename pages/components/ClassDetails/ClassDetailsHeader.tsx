@@ -12,6 +12,7 @@ import {
   type GradeNumber,
   type Period,
 } from "../../../src/types/Grades";
+import useSessionStore from "../../../src/stores/useSessionStore";
 
 type ClassDetailsHeaderProps = {
   classTitle: string;
@@ -62,65 +63,38 @@ type ButtonClientProps = {
 
 function ButtonClient({ src, alt, pageRoute }: ButtonClientProps) {
   const router = useRouter();
+  const classes = useSessionStore((s) => s.classes);
+  const selectedIndex = useSessionStore((s) => s.selectedClassIndex);
+  const setSelectedClass = useSessionStore((s) => s.setSelectedClass);
 
   function onClickHandler() {
     if (pageRoute === "home") {
-      router.push("/home");
+      // use replace so clicking back doesn't replay the navigation stack
+      router.replace("/home");
       return;
     }
 
-    // determine current classIndex from the URL (use classIndex param)
-    const raw = router.query.classIndex || router.query.period; // fallback for legacy URLs
-    const cur = Array.isArray(raw) ? raw[0] : raw;
-    const current = Number(cur) || 1;
+    // derive current class index from the store (fallback to 1)
+    const current =
+      typeof selectedIndex === "number" && selectedIndex > 0
+        ? selectedIndex
+        : 1;
 
-    // try to discover total number of classes from stored session
-    let total = 0;
-    try {
-      const sessionRaw = localStorage.getItem("gradefluxSession");
-      if (sessionRaw) {
-        const parsed = JSON.parse(sessionRaw);
-        let candidates: any[] = [];
-        if (Array.isArray(parsed)) {
-          candidates = parsed;
-        } else if (Array.isArray(parsed.classes)) {
-          candidates = parsed.classes;
-        } else if (Array.isArray(parsed.data)) {
-          candidates = parsed.data;
-        }
-        // if items are ClassInfo wrappers ({ classCardProps, classDetailsProps })
-        // normalize to top-level list
-        if (candidates.length > 0) {
-          const normalized = candidates
-            .map((c) => (c && c.classCardProps ? c : c))
-            .filter(Boolean);
-          total = normalized.length;
-        }
-      }
-    } catch (e) {
-      // ignore parsing errors
-      console.error("Failed to parse session data for class count:", e);
-    }
-    if (!total) {
-      // try to detect any period-specific selected keys in localStorage
-      const keys = Object.keys(localStorage).filter((k) =>
-        k.startsWith("selectedClassDetails_"),
-      );
-      if (keys.length > 0) total = keys.length;
-    }
+    // Discover total number of classes from the store
+    let total = Array.isArray(classes) && classes.length ? classes.length : 1;
     if (!total) total = 1; // fallback minimal to avoid modulo by zero
 
-    console.log(`Navigating from class ${current} with total ${total} classes`);
     if (pageRoute === "prevClass") {
       let prev = current - 1;
       if (prev < 1) prev = total; // wrap around to end if at start
-      console.log(`Calculated previous class index: ${prev}`);
-      router.push(`/class-details/${encodeURIComponent(String(prev))}`);
+      // update canonical selection in the store and navigate to canonical page
+      setSelectedClass(prev);
+      router.replace(`/class-details`);
     } else if (pageRoute === "nextClass") {
       let next = current + 1;
       if (next > total) next = 1; // wrap around to start if at end
-      console.log(`Calculated next class index: ${next}`);
-      router.push(`/class-details/${encodeURIComponent(String(next))}`);
+      setSelectedClass(next);
+      router.replace(`/class-details`);
     }
   }
 

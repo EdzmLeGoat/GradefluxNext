@@ -6,7 +6,7 @@ import * as cheerio from 'cheerio';
 import { parseStringPromise } from 'xml2js';
 import { calculateOverallGrade, getGradeLetter } from '../../src/types/Grades';
 
-import { ClassInfo, ClassCardProps, ClassDetailsProps, ClassAssignment, Period, GradeNumber, GradeLetter } from '../../src/types/Grades';
+import { ClassProps, ClassAssignment, Period, GradeNumber, GradeLetter } from '../../src/types/Grades';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -102,7 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : [coursesNode]
       : [];
 
-    const parsedCourses: ClassInfo[] = courseArray.map((course: any) => {
+    const parsedCourses: ClassProps[] = courseArray.map((course: any) => {
       // Safely extract fields from varying XML->JSON shapes
       let classTitle = course.Title || course.classTitle || course.CourseName || '';
       // Remove any parenthetical fragments like " (ITC2021B)" from titles
@@ -141,27 +141,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const gradeNumber = calculateOverallGrade(assignmentList);
       const gradeLetter = (typeof gradeNumber === 'number') ? getGradeLetter(gradeNumber) : 'N/A';
 
-      // Semester fields: use same values if explicit sem fields are absent
+      // will calculate semester grades based on previous grades but for now just mirror quarter grade
       const semLetter = (course.semLetter || gradeLetter) as GradeLetter;
       const semNumber = (course.semNumber || gradeNumber) as GradeNumber;
 
-      const info: ClassInfo = {
-        classCardProps: {
-          classTitle: classTitle,
-          teacherName: teacherName,
-          periodNumber: periodNumber,
-          gradeLetter: gradeLetter,
-          gradeNumber: (typeof gradeNumber === 'number' ? gradeNumber : 'N/A'),
-          semLetter: semLetter,
-          semNumber: (typeof semNumber === 'number' ? semNumber : 'N/A') as GradeNumber,
-        },
-        classDetailsProps: {
-          classTitle: classTitle,
-          teacherName: teacherName,
-          periodNumber: periodNumber,
-          assignmentList: assignmentList,
-        },
-      };
+      const info: ClassProps = {
+        classTitle: classTitle,
+        teacherName: teacherName,
+        periodNumber: periodNumber,
+        assignmentList: assignmentList,
+        gradeLetter: gradeLetter,
+        gradeNumber: (typeof gradeNumber === 'number' ? gradeNumber : 'N/A'),
+        semLetter: semLetter,
+        semNumber: (typeof semNumber === 'number' ? semNumber : 'N/A') as GradeNumber,
+      }
       return info;
     });
 
