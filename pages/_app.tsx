@@ -2,7 +2,7 @@ import "../src/index.css";
 import "../src/App.css"; // apply local app styles including login form styles
 import NextApp, { AppProps } from "next/app";
 import type { AppContext } from "next/app";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import LoginPage from "./components/Login/LoginPage";
@@ -31,125 +31,104 @@ export default function MyApp({
   const setClassesStore = useSessionStore((s) => s.setClasses);
   const clearSessionStore = useSessionStore((s) => s.clearSession);
 
+  // run-once guard for initial startup redirect
+  const didRunStartupRedirect = React.useRef(false);
+
   useEffect(() => {
-    // run only on client
-    const session =
-      typeof window !== "undefined"
-        ? localStorage.getItem("gradefluxSession")
-        : null;
-    const pathname = router.pathname;
+    // Run only on initial client mount. This avoids overriding navigation after login.
+    if (didRunStartupRedirect.current) return;
+    didRunStartupRedirect.current = true;
 
-    // If there's no session, require the dedicated login route
-    if (!session) {
-      // clear any existing classes in the global store
-      try {
-        setClassesStore([]);
-      } catch (e) {
-        /* ignore */
-      }
+    if (typeof window === "undefined") return;
 
-      if (pathname === "/login") {
-        setShowLogin(true);
-      } else {
-        // redirect user to dedicated login route
-        router.replace("/login");
-        setShowLogin(false);
-      }
-      return;
-    }
-
-    // We have a session in localStorage — try to hydrate classCardProps from it or from initialClassInfo
     try {
-      const parsed = JSON.parse(session || "null");
-      console.log("Parsed session data:", parsed);
+      const session = localStorage.getItem("gradefluxSession");
+      if (session) {
+        const parsed = JSON.parse(session || "null");
 
-      const normalizeArrayToClassInfo = (arr: any[]): any[] =>
-        arr.map((item: any, i: number) => {
-          // If item already looks like a ClassInfo wrapper, keep it but ensure both fields exist
-          if (item && item.classCardProps) {
-            return {
-              classCardProps: item.classCardProps,
-              classDetailsProps: item.classDetailsProps || item.classCardProps,
+        const normalizeArrayToClassInfo = (arr: any[]): any[] =>
+          arr.map((item: any, i: number) => {
+            if (item && item.classCardProps) {
+              return {
+                classCardProps: item.classCardProps,
+                classDetailsProps:
+                  item.classDetailsProps || item.classCardProps,
+              };
+            }
+            const details = item || {};
+            const card = {
+              classTitle: details.classTitle || `Class ${i + 1}`,
+              teacherName: details.teacherName || "",
+              periodNumber: details.periodNumber || String(i + 1),
+              gradeLetter: details.gradeLetter ?? "N/A",
+              gradeNumber:
+                typeof details.gradeNumber === "number"
+                  ? details.gradeNumber
+                  : (details.gradeNumber ?? "N/A"),
+              semLetter: details.semLetter ?? "N/A",
+              semNumber:
+                typeof details.semNumber === "number"
+                  ? details.semNumber
+                  : (details.semNumber ?? "N/A"),
             };
+            return {
+              classCardProps: card,
+              classDetailsProps: details,
+            };
+          });
+
+        const candidates = [
+          parsed?.classes,
+          parsed?.state?.classes,
+          parsed?.sessionData?.classes,
+          parsed?.data,
+        ];
+        let raw: any[] | null = null;
+        for (const c of candidates) {
+          if (Array.isArray(c)) {
+            raw = c as any[];
+            break;
           }
-
-          // If item looks like ClassDetailsProps, build a safe classCardProps from it
-          const details = item || {};
-          const card = {
-            classTitle: details.classTitle || `Class ${i + 1}`,
-            teacherName: details.teacherName || "",
-            periodNumber: details.periodNumber || String(i + 1),
-            gradeLetter: details.gradeLetter ?? "N/A",
-            gradeNumber:
-              typeof details.gradeNumber === "number"
-                ? details.gradeNumber
-                : (details.gradeNumber ?? "N/A"),
-            semLetter: details.semLetter ?? "N/A",
-            semNumber:
-              typeof details.semNumber === "number"
-                ? details.semNumber
-                : (details.semNumber ?? "N/A"),
-          };
-
-          return {
-            classCardProps: card,
-            classDetailsProps: details,
-          };
-        });
-
-      // The persisted shape may be one of several forms depending on how it was saved:
-      // - { classes: [...] }
-      // - { state: { classes: [...] } } (zustand persist)
-      // - raw array [...] or other wrappers
-      const candidates = [
-        parsed?.classes,
-        parsed?.state?.classes,
-        parsed?.sessionData?.classes,
-        parsed?.data,
-      ];
-      let raw: any[] | null = null;
-      for (const c of candidates) {
-        if (Array.isArray(c)) {
-          raw = c as any[];
-          break;
         }
-      }
-      if (!raw && Array.isArray(parsed)) raw = parsed as any[];
+        if (!raw && Array.isArray(parsed)) raw = parsed as any[];
 
-      if (raw) {
-        const normalized = normalizeArrayToClassInfo(raw);
-        // normalized is an array of wrappers; extract ClassProps entries for UI and store
-        const uiNormalized = normalized.map(
-          (n) =>
-            (n.classDetailsProps
-              ? n.classDetailsProps
-              : n.classCardProps
-                ? n.classCardProps
-                : n) as ClassProps,
-        );
-        setClassProps(uiNormalized);
-        // Convert normalized entries into ClassProps objects for the store
-        const classesForStore = uiNormalized;
-        try {
-          setClassesStore(classesForStore as ClassProps[]);
-        } catch (e) {
-          /* ignore */
+        if (raw) {
+          const normalized = normalizeArrayToClassInfo(raw);
+          const uiNormalized = normalized.map(
+            (n) =>
+              (n.classDetailsProps
+                ? n.classDetailsProps
+                : n.classCardProps
+                  ? n.classCardProps
+                  : n) as ClassProps,
+          );
+          setClassProps(uiNormalized);
+          try {
+            setClassesStore(uiNormalized as ClassProps[]);
+          } catch (e) {
+            /* ignore */
+          }
+        } else if (initialClassInfo && Array.isArray(initialClassInfo)) {
+          const raw2 = initialClassInfo as any[];
+          const normalized = normalizeArrayToClassInfo(raw2);
+          const uiNormalized = normalized.map(
+            (n) =>
+              (n.classDetailsProps
+                ? n.classDetailsProps
+                : n.classCardProps
+                  ? n.classCardProps
+                  : n) as ClassProps,
+          );
+          setClassProps(uiNormalized);
+          try {
+            setClassesStore(uiNormalized as ClassProps[]);
+          } catch (e) {
+            /* ignore */
+          }
         }
-      } else if (initialClassInfo && Array.isArray(initialClassInfo)) {
-        const raw2 = initialClassInfo as any[];
-        const normalized = normalizeArrayToClassInfo(raw2);
-        const uiNormalized = normalized.map(
-          (n) =>
-            (n.classDetailsProps
-              ? n.classDetailsProps
-              : n.classCardProps
-                ? n.classCardProps
-                : n) as ClassProps,
-        );
-        setClassProps(uiNormalized);
-        const classesForStore = uiNormalized;
+      } else {
         try {
-          setClassesStore(classesForStore as ClassProps[]);
+          setClassesStore([]);
         } catch (e) {
           /* ignore */
         }
@@ -158,26 +137,31 @@ export default function MyApp({
       console.warn("Failed to parse session for classes:", e);
     }
 
-    // we have a session; only redirect away from /login if both session and auth cookie exist
-    if (pathname === "/login") {
-      const hasAuthCookie =
-        typeof document !== "undefined" &&
-        document.cookie.includes("gradefluxAuth=1");
-      if (hasAuthCookie) {
-        router.replace("/");
-      } else {
-        // keep showing the login page until the user submits
-        setShowLogin(true);
-        return;
-      }
+    // Force the initial startup to go to login so server restarts can't bypass auth.
+    if (router.pathname !== "/login") {
+      setShowLogin(true);
+      router.replace("/login");
+      return;
     }
-    setShowLogin(false);
+    setShowLogin(true);
   }, [router, processing]);
 
   const handleLogin = (username: string, password: string) => {
     // Authenticate against our Next API. Never persist the plain password in storage.
     (async () => {
       try {
+        // Clear any previous persisted session data before attempting a fresh login.
+        try {
+          localStorage.removeItem("gradefluxSession");
+        } catch (e) {
+          /* ignore */
+        }
+        try {
+          clearSessionStore();
+        } catch (e) {
+          /* ignore */
+        }
+
         setProcessing(true);
         // POST credentials to our server API which will perform SOAP/SAML exchange
         const resp = await axios.post("/api/get-grades", {
@@ -222,6 +206,12 @@ export default function MyApp({
         // clear any in-memory credentials and advance into the app
         setCredentials(null);
         setShowLogin(false);
+        // set auth cookie so middleware and client checks recognize successful login
+        try {
+          document.cookie = "gradefluxAuth=1; path=/";
+        } catch (e) {
+          /* ignore */
+        }
         router.replace("/home");
       } catch (err: any) {
         console.error(
@@ -242,22 +232,12 @@ export default function MyApp({
   return (
     <>
       <Header />
-      {showLogin && router.pathname === "/login" ? (
+      {router.pathname === "/login" ? (
         <LoginPage onSubmit={handleLogin} loading={processing} />
       ) : (
         <div className="main-container">
           <Sidebar />
-          <main className="main-content">
-            {/* page content rendered by Next - prefer ClassList when classes available */}
-            {router.pathname.startsWith("/class-details") ? (
-              // dynamic class-details route should render the page component
-              <Component {...pageProps} />
-            ) : classProps && classProps.length ? (
-              <ClassListPage classProps={classProps} />
-            ) : (
-              <Component {...pageProps} />
-            )}
-          </main>
+          <main className="main-content">{<Component {...pageProps} />}</main>
         </div>
       )}
     </>

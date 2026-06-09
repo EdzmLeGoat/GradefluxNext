@@ -45,8 +45,8 @@ export default function ClassAssignment({
 
   const handleSaveEdit = () => {
     // validation
-    if (totalValue === null || isNaN(totalValue) || totalValue < 0) {
-      alert("Total points must be a non-negative number");
+    if (totalValue === null || isNaN(totalValue) || totalValue <= 0) {
+      alert("Total points must be a non-negative non-zero number");
       return;
     }
     if (pointsValue !== null && pointsValue !== "N/A") {
@@ -62,14 +62,31 @@ export default function ClassAssignment({
     }
 
     try {
+      // convert pointsValue to a GradeNumber (number | "N/A") so store keeps numeric types
+      let pointsPayload: number | "N/A";
+      if (pointsValue === null || pointsValue === "N/A") {
+        pointsPayload = "N/A";
+      } else {
+        // safe numeric cast after validation above
+        pointsPayload = Number(pointsValue);
+      }
+
+      // convert totalPoints to number
+      let totalPayload: number;
+      if (totalValue === null) {
+        totalPayload = 10;
+      } else {
+        totalPayload = Number(totalValue);
+      }
+
       updateAssignmentFromAll?.(
         {
           assignmentTitle: assignment.assignmentTitle,
           dateGraded: assignment.dateGraded || null,
         },
         {
-          pointsEarned: pointsValue === null ? null : pointsValue,
-          totalPoints: totalValue === null ? undefined : totalValue,
+          pointsEarned: pointsPayload,
+          totalPoints: totalPayload,
         },
       );
       setEditing(false);
@@ -137,14 +154,16 @@ export default function ClassAssignment({
             <Image
               className="small-icon flex-shrink-0"
               src={boltIcon}
-              alt="Edit assignment"
+              alt="Compute assignment"
               width={30}
               height={30}
-              onClick={() => setEditing(true)}
             />
           </div>
         )}
-        <span className="assignment-grade-actual">
+        <span
+          className="assignment-grade-actual"
+          onClick={() => setEditing(true)}
+        >
           {editing ? (
             <input
               value={pointsValue ?? "N/A"}
@@ -157,7 +176,10 @@ export default function ClassAssignment({
           )}
         </span>
         <p className="assignment-grade-sep">/</p>
-        <span className="assignment-grade-total">
+        <span
+          className="assignment-grade-total"
+          onClick={() => setEditing(true)}
+        >
           {editing ? (
             <input
               type="number"

@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type {
   ClassProps,
   ClassAssignment,
+  GradeNumber
 } from "@/types/Grades";
 import { calculateOverallGrade, getGradeLetter } from "@/types/Grades";
 
@@ -20,7 +21,7 @@ type SessionState = {
   recomputeClassGrades: (cls: ClassProps) => ClassProps;
   deleteAssignmentFromAll: (id: AssignmentIdentifier) => void;
   deleteAssignmentFromClass: (classIndex: number, id: AssignmentIdentifier) => void;
-  updateAssignmentFromAll?: (id: AssignmentIdentifier, updates: Partial<{ pointsEarned: string | number | null; totalPoints: number }>) => void;
+  updateAssignmentFromAll?: (id: AssignmentIdentifier, updates: Partial<{ pointsEarned: GradeNumber; totalPoints: GradeNumber }>) => void;
   clearSession: () => void;
 };
 
@@ -93,7 +94,7 @@ export const useSessionStore = create<SessionState>()(
         set({ classes: copy });
       },
 
-      updateAssignmentFromAll: (id: AssignmentIdentifier, updates: Partial<{ pointsEarned: string | number | null; totalPoints: number }>) => {
+      updateAssignmentFromAll: (id: AssignmentIdentifier, updates: Partial<{ pointsEarned: GradeNumber; totalPoints: GradeNumber }>) => {
         const classes: ClassProps[] = get().classes || [];
         let changed = false;
         const match = (a: ClassAssignment | any) =>

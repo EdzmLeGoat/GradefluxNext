@@ -45,7 +45,15 @@ export default function SidebarElement({
       }
 
       // navigate to the login page
-      router.push("/login");
+      // use replace so history/back doesn't return to the logged-in view
+      router.replace("/login").catch(() => {
+        // fallback to hard navigation if Next router doesn't update the UI
+        try {
+          window.location.href = "/login";
+        } catch (e) {
+          /* ignore */
+        }
+      });
       return;
     }
 

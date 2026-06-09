@@ -1,15 +1,14 @@
 import React from "react";
 import ClassCard from "./ClassCard";
 import type { ClassProps } from "../../../src/types/Grades";
+import useSessionStore from "../../../src/stores/useSessionStore";
 
-type Props = {
-  classProps?: ClassProps[] | null;
-};
+export default function ClassListPage() {
+  const classes = useSessionStore((s) => s.classes);
 
-export default function ClassListPage({ classProps }: Props) {
   return (
     <ul className="card-container">
-      {classProps?.map((item, index) => {
+      {classes?.map((item, index) => {
         // item will be ClassProps
         const classIndex = index + 1; // 1-based index as requested
         return (

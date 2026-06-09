@@ -61,11 +61,9 @@ export function calculateOverallGrade(assignments: ClassAssignment[]): GradeNumb
   let atTotalPointsPossible = 0;
 
   allTaskAssignments.forEach((assignment) => {
-    if (assignment.pointsEarned !== "N/A") {
-      atTotalPointsEarned += assignment.pointsEarned;
-      atTotalPointsPossible += assignment.totalPoints;
-      console.log(`Adding All Task assignment "${assignment.assignmentTitle}": ${assignment.pointsEarned}/${assignment.totalPoints}`);
-      console.log('running total points possible:', atTotalPointsPossible, 'total points earned:', atTotalPointsEarned);
+    if (assignment.pointsEarned !== "N/A" && assignment.totalPoints > 0) {
+      atTotalPointsEarned += Number(assignment.pointsEarned);
+      atTotalPointsPossible += Number(assignment.totalPoints);
     }
   });
 
@@ -75,9 +73,9 @@ export function calculateOverallGrade(assignments: ClassAssignment[]): GradeNumb
   let ppTotalPointsPossible = 0;
 
   practicePrepAssignments.forEach((assignment) => {
-    if (assignment.pointsEarned !== "N/A") {
-      ppTotalPointsEarned += assignment.pointsEarned;
-      ppTotalPointsPossible += assignment.totalPoints;
+    if (assignment.pointsEarned !== "N/A" && assignment.totalPoints > 0) {
+      ppTotalPointsEarned += Number(assignment.pointsEarned);
+      ppTotalPointsPossible += Number(assignment.totalPoints);
     }
   });
 
