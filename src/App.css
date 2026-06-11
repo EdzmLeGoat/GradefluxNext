@@ -224,6 +224,13 @@ body,
   margin: 0 0.5rem;
 }
 
+.class-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  align-items: center;
+}
 .card-container {
   list-style: none;
   height: fit-content;
@@ -477,7 +484,7 @@ body,
   }
 }
 
-@media only screen and (min-width: 1120px) {
+@media only screen and (min-width: 1280px) {
   .card-container {
     grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
@@ -1161,11 +1168,17 @@ button.login-button {
   font-size: 13px;
   line-height: 1;
   height: 35px;
+  color: white;
+  min-width: 200px;
   gap: 5px;
   border: 1px solid var(--color-border);
   background-color: var(--gray-3);
   span {
     font-size: min(3vw, 13px);
+  }
+  &:hover {
+    background-color: var(--gray-4);
+    border-color: var(--color-primary);
   }
 }
 

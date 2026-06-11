@@ -1,5 +1,4 @@
 import React from "react";
-import Sidebar from "@/components/Main/Sidebar/Sidebar";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import {
   CheckIcon,

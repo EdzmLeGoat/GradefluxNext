@@ -153,7 +153,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               <skipLoginLog>0</skipLoginLog>
               <parent>0</parent>
               <webServiceHandleName>PXPWebServices</webServiceHandleName>
-              <paramStr>&lt;Parms&gt;&lt;childIntId&gt;${mp}&lt;/childIntId&gt;&lt;ReportPeriod&gt;1&lt;/ReportPeriod&gt;&lt;/Parms&gt;</paramStr>
+              <paramStr>&lt;Parms&gt;&lt;childIntId&gt;0&lt;/childIntId&gt;&lt;ReportPeriod&gt;${mp}&lt;/ReportPeriod&gt;&lt;/Parms&gt;</paramStr>
               <methodName>Gradebook</methodName>
             </ProcessWebServiceRequestMultiWeb>
           </soap:Body>
