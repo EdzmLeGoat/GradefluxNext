@@ -24,12 +24,11 @@ export default function MyApp({
     username?: string;
     password?: string;
   } | null>(null);
-  // now we store the app's classes as ClassProps objects
-  const [classProps, setClassProps] = useState<ClassProps[] | null>(null);
 
   // Zustand store setters
   const setClassesStore = useSessionStore((s) => s.setClasses);
   const clearSessionStore = useSessionStore((s) => s.clearSession);
+  const setYearDataStore = useSessionStore((s) => (s as any).setYearData);
 
   // run-once guard for initial startup redirect
   const didRunStartupRedirect = React.useRef(false);
@@ -46,86 +45,76 @@ export default function MyApp({
       if (session) {
         const parsed = JSON.parse(session || "null");
 
-        const normalizeArrayToClassInfo = (arr: any[]): any[] =>
-          arr.map((item: any, i: number) => {
-            if (item && item.classCardProps) {
-              return {
-                classCardProps: item.classCardProps,
-                classDetailsProps:
-                  item.classDetailsProps || item.classCardProps,
-              };
+        // If stored shape looks like Semester[] (two semesters with interimOne/quarterOne keys), hydrate yearData
+        if (
+          Array.isArray(parsed) &&
+          parsed.length === 2 &&
+          (parsed[0]?.interimOne ||
+            parsed[0]?.quarterOne ||
+            parsed[0]?.interimTwo ||
+            parsed[0]?.quarterTwo)
+        ) {
+          try {
+            // store yearData in zustand
+            setYearDataStore(parsed);
+          } catch (e) {
+            /* ignore */
+          }
+
+          // derive UI classes from latest non-empty marking period (same logic as store)
+          const s1 =
+            parsed[0] ||
+            ({
+              interimOne: [],
+              quarterOne: [],
+              interimTwo: [],
+              quarterTwo: [],
+            } as any);
+          const s2 =
+            parsed[1] ||
+            ({
+              interimOne: [],
+              quarterOne: [],
+              interimTwo: [],
+              quarterTwo: [],
+            } as any);
+          const buckets = [
+            s1.interimOne || [],
+            s1.quarterOne || [],
+            s1.interimTwo || [],
+            s1.quarterTwo || [],
+            s2.interimOne || [],
+            s2.quarterOne || [],
+            s2.interimTwo || [],
+            s2.quarterTwo || [],
+          ];
+          let foundIndex: number | null = null;
+          for (let i = buckets.length - 1; i >= 0; i--) {
+            if (Array.isArray(buckets[i]) && buckets[i].length > 0) {
+              foundIndex = i;
+              break;
             }
-            const details = item || {};
-            const card = {
-              classTitle: details.classTitle || `Class ${i + 1}`,
-              teacherName: details.teacherName || "",
-              periodNumber: details.periodNumber || String(i + 1),
-              gradeLetter: details.gradeLetter ?? "N/A",
-              gradeNumber:
-                typeof details.gradeNumber === "number"
-                  ? details.gradeNumber
-                  : (details.gradeNumber ?? "N/A"),
-              semLetter: details.semLetter ?? "N/A",
-              semNumber:
-                typeof details.semNumber === "number"
-                  ? details.semNumber
-                  : (details.semNumber ?? "N/A"),
-            };
-            return {
-              classCardProps: card,
-              classDetailsProps: details,
-            };
-          });
-
-        const candidates = [
-          parsed?.classes,
-          parsed?.state?.classes,
-          parsed?.sessionData?.classes,
-          parsed?.data,
-        ];
-        let raw: any[] | null = null;
-        for (const c of candidates) {
-          if (Array.isArray(c)) {
-            raw = c as any[];
-            break;
           }
-        }
-        if (!raw && Array.isArray(parsed)) raw = parsed as any[];
-
-        if (raw) {
-          const normalized = normalizeArrayToClassInfo(raw);
-          const uiNormalized = normalized.map(
-            (n) =>
-              (n.classDetailsProps
-                ? n.classDetailsProps
-                : n.classCardProps
-                  ? n.classCardProps
-                  : n) as ClassProps,
+          console.log(
+            "Found persisted session with yearData; derived classes from bucket index",
+            foundIndex,
           );
-          setClassProps(uiNormalized);
-          try {
-            setClassesStore(uiNormalized as ClassProps[]);
-          } catch (e) {
-            /* ignore */
-          }
-        } else if (initialClassInfo && Array.isArray(initialClassInfo)) {
-          const raw2 = initialClassInfo as any[];
-          const normalized = normalizeArrayToClassInfo(raw2);
-          const uiNormalized = normalized.map(
-            (n) =>
-              (n.classDetailsProps
-                ? n.classDetailsProps
-                : n.classCardProps
-                  ? n.classCardProps
-                  : n) as ClassProps,
-          );
-          setClassProps(uiNormalized);
-          try {
-            setClassesStore(uiNormalized as ClassProps[]);
-          } catch (e) {
-            /* ignore */
-          }
+          const selectedClasses =
+            foundIndex !== null ? buckets[foundIndex] : [];
+          setClassesStore(selectedClasses as ClassProps[]);
+          // continue startup flow
+          // (don't return here; allow login redirect logic below to decide navigation)
         }
+
+        const parsedObj = parsed;
+
+        // Force the initial startup to go to login so server restarts can't bypass auth.
+        if (router.pathname !== "/login") {
+          setShowLogin(true);
+          router.replace("/login");
+          return;
+        }
+        setShowLogin(true);
       } else {
         try {
           setClassesStore([]);
@@ -173,33 +162,96 @@ export default function MyApp({
         const data = resp?.data;
         if (!data) throw new Error("Empty response from authentication API");
 
-        // If server provided explicit sessionData (from SAML relay), store that securely (no password)
-        if (data.sessionData) {
-          localStorage.setItem(
-            "gradefluxSession",
-            JSON.stringify(data.sessionData),
-          );
+        // If API returned a Semester[] (two semesters), persist and set yearData
+        if (
+          Array.isArray(data) &&
+          data.length === 2 &&
+          (data[0]?.interimOne || data[0]?.quarterOne || data[1]?.interimOne)
+        ) {
           try {
-            // hydrate store if sessionData includes classes
-            if (
-              data.sessionData.classes &&
-              Array.isArray(data.sessionData.classes)
-            ) {
-              setClassesStore(data.sessionData.classes as ClassProps[]);
+            localStorage.setItem(
+              "gradefluxSession",
+              JSON.stringify({ yearData: data }),
+            );
+          } catch (e) {
+            /* ignore */
+          }
+          try {
+            setYearDataStore(data);
+            // derive latest classes for UI similar to store
+            const s1 =
+              data[0] ||
+              ({
+                interimOne: [],
+                quarterOne: [],
+                interimTwo: [],
+                quarterTwo: [],
+              } as any);
+            const s2 =
+              data[1] ||
+              ({
+                interimOne: [],
+                quarterOne: [],
+                interimTwo: [],
+                quarterTwo: [],
+              } as any);
+            const buckets = [
+              s1.interimOne || [],
+              s1.quarterOne || [],
+              s1.interimTwo || [],
+              s1.quarterTwo || [],
+              s2.interimOne || [],
+              s2.quarterOne || [],
+              s2.interimTwo || [],
+              s2.quarterTwo || [],
+            ];
+            let foundIndex: number | null = null;
+            for (let i = buckets.length - 1; i >= 0; i--) {
+              if (Array.isArray(buckets[i]) && buckets[i].length > 0) {
+                foundIndex = i;
+                break;
+              }
             }
+            const selectedClasses =
+              foundIndex !== null ? buckets[foundIndex] : [];
+            setClassesStore(selectedClasses as ClassProps[]);
           } catch (e) {
             /* ignore */
           }
         } else {
-          // Otherwise, assume the API returned parsed class info; store under classes key.
-          localStorage.setItem(
-            "gradefluxSession",
-            JSON.stringify({ classes: data }),
-          );
-          try {
-            if (Array.isArray(data)) setClassesStore(data as ClassProps[]);
-          } catch (e) {
-            /* ignore */
+          // If server provided explicit sessionData (from SAML relay), store that securely
+          if (data.sessionData) {
+            localStorage.setItem(
+              "gradefluxSession",
+              JSON.stringify(data.sessionData),
+            );
+            try {
+              if (
+                data.sessionData.classes &&
+                Array.isArray(data.sessionData.classes)
+              ) {
+                setClassesStore(data.sessionData.classes as ClassProps[]);
+              }
+            } catch (e) {
+              /* ignore */
+            }
+          } else {
+            // Otherwise, assume the API returned parsed class info; store under classes key.
+            try {
+              localStorage.setItem(
+                "gradefluxSession",
+                JSON.stringify({ classes: data }),
+              );
+            } catch (e) {
+              /* ignore */
+            }
+            try {
+              if (Array.isArray(data)) {
+                setClassesStore(data as ClassProps[]);
+              }
+            } catch (e) {
+              /* ignore */
+            }
           }
         }
 

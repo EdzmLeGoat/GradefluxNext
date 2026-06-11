@@ -38,6 +38,13 @@ export type ClassProps = {
   semNumber: GradeNumber;
 };
 
+export type Semester = {
+  interimOne: ClassProps[];
+  quarterOne: ClassProps[];
+  interimTwo: ClassProps[];
+  quarterTwo: ClassProps[];
+}
+
 export type ClassAssignment = {
   assignmentTitle: string;
   pointsEarned: GradeNumber;
@@ -46,7 +53,7 @@ export type ClassAssignment = {
   type: AssignmentType;
 };
 
-type MarkingPeriod = "MP1" | "MP2" | "MP3" | "MP4"
+export type MarkingPeriod = "MP1" | "MP2" | "MP3" | "MP4" | "MP1 Interim" | "MP2 Interim" | "MP3 Interim" | "MP4 Interim";
 export function calculateOverallGrade(assignments: ClassAssignment[]): GradeNumber {
   //we only care about at and pp when calculating grade
   const allTaskAssignments = assignments.filter(
@@ -81,8 +88,6 @@ export function calculateOverallGrade(assignments: ClassAssignment[]): GradeNumb
 
   const practicePrepGrade = (ppTotalPointsPossible === 0) ? 100 : (ppTotalPointsEarned / ppTotalPointsPossible) * 100;
 
-  console.log(`All Tasks: ${atTotalPointsEarned}/${atTotalPointsPossible} (${allTaskGrade}%)`);
-  console.log(`Practice Prep: ${ppTotalPointsEarned}/${ppTotalPointsPossible} (${practicePrepGrade}%)`);
   if (atTotalPointsPossible === 0 && ppTotalPointsPossible === 0) {
     return "N/A";
   } else {

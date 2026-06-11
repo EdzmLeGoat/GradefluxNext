@@ -5,6 +5,8 @@ import useSessionStore from "../../../src/stores/useSessionStore";
 
 export default function ClassListPage() {
   const classes = useSessionStore((s) => s.classes);
+  //grab selected class period for purpose of logging
+  const selectedMP = useSessionStore((s) => s.selectedMarkingPeriod);
 
   return (
     <ul className="card-container">

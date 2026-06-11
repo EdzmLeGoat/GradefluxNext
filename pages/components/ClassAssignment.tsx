@@ -168,7 +168,6 @@ export default function ClassAssignment({
             <input
               value={pointsValue ?? "N/A"}
               onChange={(e) => setPointsValue(e.target.value)}
-              style={{ width: 60 }}
               aria-label="Points earned"
             />
           ) : (
@@ -185,7 +184,6 @@ export default function ClassAssignment({
               type="number"
               value={totalValue ?? 0}
               onChange={(e) => setTotalValue(Number(e.target.value))}
-              style={{ width: 60 }}
               aria-label="Total points"
             />
           ) : (
