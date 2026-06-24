@@ -1357,3 +1357,14 @@ body,
 .assignment-grade-container > div button:active {
   transform: translateY(1px);
 }
+
+.assignment-edit-points {
+  padding: 0.5rem;
+  width: 50px;
+  /*horizontally center text*/
+  text-align: center;
+  background-color: var(--gray-5);
+  border: none;
+  color: var(--color-text);
+  border-radius: 8px;
+}

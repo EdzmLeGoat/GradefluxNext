@@ -160,36 +160,43 @@ export default function ClassAssignment({
             />
           </div>
         )}
-        <span
-          className="assignment-grade-actual"
-          onClick={() => setEditing(true)}
-        >
-          {editing ? (
+        {editing ? (
+          <>
             <input
+              className="assignment-edit-points"
+              id="earned"
               value={pointsValue ?? "N/A"}
               onChange={(e) => setPointsValue(e.target.value)}
               aria-label="Points earned"
             />
-          ) : (
-            assignment.pointsEarned
-          )}
-        </span>
-        <p className="assignment-grade-sep">/</p>
-        <span
-          className="assignment-grade-total"
-          onClick={() => setEditing(true)}
-        >
-          {editing ? (
+            <p className="assignment-grade-sep">/</p>
             <input
+              className="assignment-edit-points"
+              id="total"
               type="number"
               value={totalValue ?? 0}
               onChange={(e) => setTotalValue(Number(e.target.value))}
               aria-label="Total points"
             />
-          ) : (
-            assignment.totalPoints
-          )}
-        </span>
+          </>
+        ) : (
+          <>
+            <span
+              className="assignment-grade-actual"
+              onClick={() => setEditing(true)}
+            >
+              {assignment.pointsEarned}
+            </span>
+            <p className="assignment-grade-sep">/</p>
+            <span
+              className="assignment-grade-total"
+              onClick={() => setEditing(true)}
+            >
+              {assignment.totalPoints}
+            </span>
+          </>
+        )}
+
         {editing && (
           <div style={{ display: "inline-flex", gap: 8, marginLeft: 8 }}>
             <button onClick={handleSaveEdit}>Save</button>

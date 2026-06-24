@@ -61,13 +61,8 @@ export default function ClassDetails() {
   const { ppActual, ppTotal, atActual, atTotal } = sumAssignments(
     details.assignmentList || [],
   );
-  const gradeNumber = calculateOverallGrade(details.assignmentList || []);
-  const semGradeNumber =
-    typeof gradeNumber === "number"
-      ? gradeNumber
-      : gradeNumber === "N/A"
-        ? 0
-        : Number(gradeNumber);
+  const gradeNumber = details.gradeNumber;
+  const semNumber = details.semNumber;
 
   return (
     <div className="class-details-container">
@@ -77,9 +72,7 @@ export default function ClassDetails() {
           teacherName={details.teacherName}
           period={details.periodNumber}
           gradeNumber={typeof gradeNumber === "number" ? gradeNumber : 0}
-          semGradeNumber={
-            typeof semGradeNumber === "number" ? semGradeNumber : 0
-          }
+          semGradeNumber={typeof semNumber === "number" ? semNumber : 0}
           ppActual={ppActual}
           ppTotal={ppTotal}
           atActual={atActual}
